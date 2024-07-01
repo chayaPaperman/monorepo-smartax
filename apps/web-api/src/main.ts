@@ -1,22 +1,29 @@
-/**
- * This is not a production server yet!
- * This is only a minimal backend to get started.
- */
-
-import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-
-import { AppModule } from './app/app.module';
+import { AppModule } from './app.module';
+import { DbService } from './services/db.service';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const globalPrefix = 'api';
-  app.setGlobalPrefix(globalPrefix);
-  const port = process.env.PORT || 3000;
-  await app.listen(port);
-  Logger.log(
-    `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
-  );
+  const dbService = app.get(DbService);
+
+  // Enable CORS
+  app.enableCors({
+    origin: 'http://localhost:4200', // Allow requests from this origin
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
+
+  // Global pipes for validation
+  app.useGlobalPipes(new ValidationPipe());
+
+  try {
+    await dbService.connect();
+    await app.listen(3000); // Make sure this port is correct
+    console.log('Application is running on: http://localhost:3000');
+  } catch (err) {
+    console.error('Failed to start the application:', err);
+  }
 }
 
 bootstrap();
